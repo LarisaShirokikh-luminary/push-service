@@ -17,10 +17,10 @@ from kafka import KafkaConsumer
 
 from push_service import NotificationService
 
-# Загрузка переменных окружения
+
 load_dotenv()
 
-# Настройка логирования
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
