@@ -1,0 +1,14 @@
+services:
+  push-service-tests:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: push-notification-service-tests
+    environment:
+      - FIREBASE_CREDENTIALS_PATH=/app/serviceAccountKey.json
+      - TEST_FCM_TOKEN=${TEST_FCM_TOKEN}
+      - TEST_FCM_TOKEN_2=${TEST_FCM_TOKEN_2}
+    volumes:
+      - ../credentials/serviceAccountKey.json:/app/serviceAccountKey.json
+      - ../logs:/app/logs
+    command: ["bash", "docker/run_tests.sh"]

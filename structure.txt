@@ -1,0 +1,38 @@
+.
+├── .dockerignore
+├── .env
+├── .env.example
+├── credentials
+│   ├── push-service-e154f-firebase-adminsdk-fbsvc-750b157407.json
+│   └── serviceAccountKey.json
+├── docker
+│   ├── docker_compose.test.yml
+│   ├── docker-compose.yml
+│   ├── Dockerfile
+│   ├── entrypoint.sh
+│   ├── README.md
+│   └── run_tests.sh
+├── examples
+│   └── kafka_integration.py
+├── firebase-messaging-sw.js
+├── index.html
+├── logs
+├── poetry.lock
+├── push_cli.py
+├── push_service
+│   ├── __init__.py
+│   ├── firebase_push.py
+│   ├── handlers.py
+│   ├── models.py
+│   ├── notification_service.py
+│   └── web_server.py
+├── pyproject.toml
+├── README.md
+├── setup.sh
+├── simple_test.py
+├── structure.txt
+└── tests
+    ├── conftest.py
+    └── test_notification_service.py
+
+8 directories, 28 files
