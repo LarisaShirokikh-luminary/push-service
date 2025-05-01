@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тестирование Push-уведомлений</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <header class="py-3 mb-4 border-bottom">
+            <div class="d-flex align-items-center justify-content-between">
+                <h1 class="h3 mb-0"><a href="/" class="text-body-emphasis text-decoration-none">Сервис
+                        Push-уведомлений</a></h1>
+                <div>
+                    <a href="/" class="btn btn-outline-secondary me-2">Главная</a>
+                    <a href="/api/status" class="btn btn-outline-info">Статус сервера</a>
+                </div>
+            </div>
+        </header>
+
+        <div class="row">
+            <div class="col-md-12">
+                <h2 class="text-center mb-4">Тестирование Push-уведомлений</h2>
+
+                <div class="alert alert-info" role="alert">
+                    <p><strong>Это приложение позволяет протестировать отправку push-уведомлений через Firebase Cloud
+                            Messaging.</strong></p>
+                    <p class="mb-0">Получите токен вашего устройства и отправьте тестовое уведомление, чтобы проверить,
+                        работает ли система корректно.</p>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3 class="h5">FCM Токен устройства</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="tokenStatus" class="alert alert-warning">
+                            Токен FCM еще не получен. Нажмите кнопку "Запросить разрешение" для получения токена.
+                        </div>
+                        <div id="fcmToken" class="token-display" style="display: none;"></div>
+                        <div class="mt-3">
+                            <button id="requestPermission" class="btn btn-primary me-2">Запросить разрешение</button>
+                            <button id="copyToken" class="btn btn-outline-secondary" style="display: none;">Копировать
+                                токен</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3 class="h5">Отправка тестового уведомления</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="pushForm">
+                            <div class="mb-3">
+                                <label for="token" class="form-label">FCM токен (для отправки)</label>
+                                <input type="text" class="form-control" id="token"
+                                    placeholder="Введите FCM токен устройства">
+                                <div class="form-text">Если не указан, будет использован токен, полученный выше.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Заголовок</label>
+                                <input type="text" class="form-control" id="title" value="Тестовое уведомление"
+                                    required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="body" class="form-label">Текст сообщения</label>
+                                <textarea class="form-control" id="body" rows="2"
+                                    required>Это тестовое push-уведомление</textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="data" class="form-label">Дополнительные данные (JSON)</label>
+                                <textarea class="form-control" id="data" rows="3">{
+  "action": "open_profile",
+  "userId": "12345",
+  "timestamp": 1714731962
+}</textarea>
+                                <div class="form-text">JSON объект с дополнительными данными для уведомления.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="image" class="form-label">URL изображения (опционально)</label>
+                                <input type="url" class="form-control" id="image"
+                                    placeholder="https://example.com/image.jpg">
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" id="useTopic">
+                                <label class="form-check-label" for="useTopic">Отправить на тему</label>
+                            </div>
+
+                            <div class="mb-3" id="topicGroup" style="display: none;">
+                                <label for="topic" class="form-label">Название темы</label>
+                                <input type="text" class="form-control" id="topic" placeholder="test_topic">
+                            </div>
+
+                            <button type="submit" class="btn btn-success">Отправить уведомление</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h3 class="h5 mb-0">Логи</h3>
+                        <button id="clearLogs" class="btn btn-outline-danger btn-sm">Очистить логи</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="logs" class="logs-container"></div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3 class="h5">Примеры использования разных типов уведомлений</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="notification-examples">
+                            <button class="btn btn-outline-primary mb-2 me-2"
+                                onclick="loadExample('money-received')">Получение денег</button>
+                            <button class="btn btn-outline-primary mb-2 me-2"
+                                onclick="loadExample('money-sent')">Отправка денег</button>
+                            <button class="btn btn-outline-primary mb-2 me-2"
+                                onclick="loadExample('account-activated')">Активация аккаунта</button>
+                            <button class="btn btn-outline-primary mb-2 me-2"
+                                onclick="loadExample('status-changed')">Изменение статуса</button>
+                        </div>
+
+                        <div class="mt-3">
+                            <h4 class="h6">Доступные типы уведомлений:</h4>
+                            <ul class="notification-types">
+                                <li><strong>receive-money</strong> - Получение денег</li>
+                                <li><strong>send-money</strong> - Отправка денег</li>
+                                <li><strong>account-activated</strong> - Активация аккаунта</li>
+                                <li><strong>client-status-changed</strong> - Изменение статуса клиента</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="py-3 text-center border-top">
+            <p class="mb-0">© 2025 Сервис Push-уведомлений</p>
+        </footer>
+    </div>
+
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+
+    <!-- Firebase Messaging -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
+
+    <!-- Firebase Client -->
+    <script src="/static/js/firebase-init.js"></script>
+
+    <!-- Application Script -->
+    <script src="/static/js/app.js"></script>
+
+    <!-- Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Функция для загрузки примеров уведомлений
+        function loadExample(type) {
+            const titleInput = document.getElementById('title');
+            const bodyInput = document.getElementById('body');
+            const dataInput = document.getElementById('data');
+
+            switch (type) {
+                case 'money-received':
+                    titleInput.value = 'Поступление средств';
+                    bodyInput.value = 'На ваш счет поступило 1000 ₽ от Иван Петров';
+                    dataInput.value = JSON.stringify({
+                        type: 'receive-money',
+                        amount: 1000,
+                        currency: 'RUB',
+                        sender_name: 'Иван Петров',
+                        account_id: 'acc-123456',
+                        transaction_id: 'trx-' + Date.now(),
+                        action: 'open_transaction'
+                    }, null, 2);
+                    break;
+
+                case 'money-sent':
+                    titleInput.value = 'Перевод отправлен';
+                    bodyInput.value = 'Вы перевели 500 ₽ получателю Мария Сидорова';
+                    dataInput.value = JSON.stringify({
+                        type: 'send-money',
+                        amount: 500,
+                        currency: 'RUB',
+                        recipient_name: 'Мария Сидорова',
+                        account_id: 'acc-123456',
+                        transaction_id: 'trx-' + Date.now(),
+                        action: 'open_transaction'
+                    }, null, 2);
+                    break;
+
+                case 'account-activated':
+                    titleInput.value = 'Аккаунт активирован';
+                    bodyInput.value = 'Ваш аккаунт успешно активирован. Добро пожаловать!';
+                    dataInput.value = JSON.stringify({
+                        type: 'account-activated',
+                        account_id: 'acc-' + Date.now(),
+                        account_type: 'standard',
+                        action: 'open_account'
+                    }, null, 2);
+                    break;
+
+                case 'status-changed':
+                    titleInput.value = 'Статус изменен';
+                    bodyInput.value = 'Ваш статус изменен с "Обычный" на "Премиум"';
+                    dataInput.value = JSON.stringify({
+                        type: 'client-status-changed',
+                        old_status: 'standard',
+                        new_status: 'premium',
+                        action: 'open_profile'
+                    }, null, 2);
+                    break;
+            }
+
+            // Прокручиваем к форме
+            document.getElementById('pushForm').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+
+</html>

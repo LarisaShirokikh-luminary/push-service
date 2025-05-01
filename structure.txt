@@ -2,13 +2,16 @@
 ├── .dockerignore
 ├── .env
 ├── .env.example
+├── .gitignore
 ├── credentials
-│   ├── push-service-e154f-firebase-adminsdk-fbsvc-750b157407.json
 │   └── serviceAccountKey.json
+├── credentials_persist
 ├── docker
 │   ├── docker_compose.test.yml
+│   ├── docker-compose.webapp.yml
 │   ├── docker-compose.yml
 │   ├── Dockerfile
+│   ├── Dockerfile.webapp
 │   ├── entrypoint.sh
 │   ├── README.md
 │   └── run_tests.sh
@@ -26,8 +29,23 @@
 │   ├── models.py
 │   ├── notification_service.py
 │   └── web_server.py
+├── push_test_app
+│   ├── README.md
+│   ├── server.py
+│   ├── static
+│   │   ├── css
+│   │   │   └── styles.css
+│   │   ├── img
+│   │   │   └── firebase-logo.png
+│   │   └── js
+│   │       ├── app.js
+│   │       └── firebase-init.js
+│   └── templates
+│       ├── index.html
+│       └── push_tester.html
 ├── pyproject.toml
 ├── README.md
+├── serviceAccountKey.json
 ├── setup.sh
 ├── simple_test.py
 ├── structure.txt
@@ -35,4 +53,4 @@
     ├── conftest.py
     └── test_notification_service.py
 
-8 directories, 28 files
+14 directories, 40 files

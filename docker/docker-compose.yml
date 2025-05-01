@@ -1,63 +1,15 @@
-version: '3.8'
-
 services:
-  # Kafka для обработки событий
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.9.0
-    container_name: zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    volumes:
-      - zookeeper-data:/var/lib/zookeeper/data
-      - zookeeper-log:/var/lib/zookeeper/log
-
-  kafka:
-    image: confluentinc/cp-kafka:7.9.0
-    container_name: kafka
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-    volumes:
-      - kafka-data:/var/lib/kafka/data
-
-  # Сервис push-уведомлений
-  push-notification-service:
-    container_name: push-notification-service
+  push-service:
     build:
       context: ..
-      dockerfile: ./docker/Dockerfile
-    env_file:
-      - ../.env
-    depends_on:
-      - kafka
-      - zookeeper
-    volumes:
-      # Монтируем весь проект в /app
-      - ../:/app
-      # Том для хранения учетных данных между перезапусками
-      - push-service-credentials:/app/credentials_persist
-    working_dir: /app
-    # Используем готовый entrypoint
-    entrypoint: [ "/entrypoint.sh" ]
-    # Порт для веб-сервера
+      dockerfile: docker/Dockerfile
     ports:
-      - "8004:8004"
-    # Автоматический перезапуск при сбоях
+      - "8080:8080"
+    volumes:
+      - ../:/app
+    environment:
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_API_KEY=${FIREBASE_API_KEY}
+      - FIREBASE_APP_ID=${FIREBASE_APP_ID}
+      - PORT=${PORT}
     restart: unless-stopped
-
-# Тома для хранения данных
-volumes:
-  zookeeper-data:
-  zookeeper-log:
-  kafka-data:
-  push-service-credentials: # Том для хранения учетных данных Firebase

@@ -1,7 +1,9 @@
+# Файл: push_service/__init__.py
 """
-Основной модуль сервиса push-уведомлений.
+Модуль для работы с push-уведомлениями.
 """
-
+from .firebase_push import FirebasePushService
+from .models import PushNotification, PushNotificationStatus
 from .notification_service import NotificationService
 
-__all__ = ['NotificationService']
+__all__ = ['FirebasePushService', 'NotificationService', 'PushNotification', 'PushNotificationStatus']

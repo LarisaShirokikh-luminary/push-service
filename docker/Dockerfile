@@ -5,20 +5,14 @@ WORKDIR /app
 # Установка Poetry
 RUN pip install poetry==1.5.1
 
-# Настройка Poetry
+# Отключаем виртуальное окружение — установка будет в system site-packages
 RUN poetry config virtualenvs.create false
 
-# Установка базовых зависимостей
-RUN pip install "kafka-python>=2.0.2" "firebase-admin>=6.2.0"
+# Установка зависимостей (можно заменить на poetry install, если есть pyproject.toml)
+RUN pip install --no-cache-dir "kafka-python>=2.0.2" "firebase-admin>=6.2.0"
 
-# Создание директорий
-RUN mkdir -p /app/credentials
+COPY . .
 
-# Копируем entrypoint скрипт
-COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+EXPOSE 8080
 
-# Копирование проекта произойдет при сборке в docker-compose
-
-ENTRYPOINT ["/entrypoint.sh"]
-CMD ["python", "push_cli.py", "--all"]
+CMD ["python", "push_test_app/server.py"]
