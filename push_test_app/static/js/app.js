@@ -156,6 +156,14 @@ function handleForegroundMessage(payload) {
     // Добавляем лог о получении сообщения
     addLog('success', `Получено уведомление: ${payload.notification?.title} - ${payload.notification?.body}`);
 
+    // Для отладки выводим скрытые данные
+    if (payload.data) {
+        addLog('info', `Скрытые данные: ${JSON.stringify(payload.data)}`);
+    }
+
+    // Показываем визуальное уведомление в интерфейсе
+    showAppNotification(payload);
+
     // Показываем уведомление через Notification API
     if ('Notification' in window && Notification.permission === 'granted') {
         const notificationTitle = payload.notification?.title || 'Новое уведомление';
@@ -191,6 +199,8 @@ async function handlePushFormSubmit() {
     const body = document.getElementById('body').value;
     const dataText = document.getElementById('data').value;
     const image = document.getElementById('image').value;
+    const urlElement = document.getElementById('url');
+    const url = urlElement ? urlElement.value : '';
     const useTopic = document.getElementById('useTopic').checked;
     const topic = document.getElementById('topic').value;
 
@@ -238,6 +248,11 @@ async function handlePushFormSubmit() {
         requestData.image = image;
     }
 
+    // Добавляем URL для перехода, если указан
+    if (url) {
+        requestData.url = url;
+    }
+
     // Добавляем получателя (токен или тему)
     if (useTopic) {
         requestData.topic = topic;
@@ -251,9 +266,104 @@ async function handlePushFormSubmit() {
     const result = await window.FirebaseClient.sendPushNotification(requestData);
 
     if (result) {
-        addLog('success', `Уведомление успешно отправлено! ID: ${result.message_id}`);
+        const notificationId = result.notification && result.notification.id
+            ? result.notification.id
+            : 'неизвестно';
+        addLog('success', `Уведомление успешно отправлено! ID: ${notificationId}`);
     }
 }
 
+function showAppNotification(payload) {
+    // Проверяем, существует ли контейнер для уведомлений
+    let container = document.getElementById('app-notifications');
+
+    // Если контейнера нет, создаем его
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'app-notifications';
+        container.className = 'notification-container';
+        document.body.appendChild(container);
+    }
+
+    // Создаем элемент уведомления
+    const notification = document.createElement('div');
+    notification.className = 'app-notification';
+
+    // Генерируем уникальный ID для уведомления
+    const notificationId = 'notification-' + Date.now();
+    notification.id = notificationId;
+
+    // Заполняем содержимое
+    notification.innerHTML = `
+        <div class="app-notification-close" onclick="closeNotification('${notificationId}')">×</div>
+        <div class="app-notification-title">${payload.notification?.title || 'Новое уведомление'}</div>
+        <div class="app-notification-body">${payload.notification?.body || ''}</div>
+    `;
+
+    // Добавляем уведомление в контейнер
+    container.appendChild(notification);
+
+    // Обработка клика на уведомление (для перехода)
+    notification.addEventListener('click', (event) => {
+        // Игнорируем клик на кнопку закрытия
+        if (event.target.className === 'app-notification-close') {
+            return;
+        }
+
+        // Получаем данные для перехода
+        const data = payload.data || {};
+        let targetUrl = null;
+
+        // Проверяем наличие прямого URL
+        if (data.url) {
+            targetUrl = data.url;
+        }
+        // Проверяем различные типы действий
+        else if (data.action) {
+            switch (data.action) {
+                case 'open_profile':
+                    targetUrl = '/push-tester';
+                    break;
+                case 'open_account':
+                    targetUrl = `/accounts/${data.account_id || ''}`;
+                    break;
+                case 'open_transaction':
+                    targetUrl = `/transactions/${data.transaction_id || ''}`;
+                    break;
+                case 'open_notification':
+                    targetUrl = `/notifications/${data.notification_id || ''}`;
+                    break;
+                default:
+                    // Если действие не распознано, не переходим никуда
+                    targetUrl = null;
+            }
+        }
+
+        // Если URL определен, выполняем переход
+        if (targetUrl) {
+            console.log('Переход по URL:', targetUrl);
+            window.location.href = targetUrl;
+        }
+
+        // Закрываем уведомление
+        closeNotification(notificationId);
+    });
+
+    // Автоматически удаляем уведомление через 5 секунд
+    setTimeout(() => {
+        closeNotification(notificationId);
+    }, 5000);
+}
+
+// Функция для закрытия уведомления
+function closeNotification(id) {
+    const notification = document.getElementById(id);
+    if (notification) {
+        notification.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }
+}
 // Загрузка приложения при загрузке DOM
 document.addEventListener('DOMContentLoaded', initApp);

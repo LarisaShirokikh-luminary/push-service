@@ -10,6 +10,7 @@
 </head>
 
 <body>
+    <div id="app-notifications" class="notification-container"></div>
     <div class="container">
         <header class="py-3 mb-4 border-bottom">
             <div class="d-flex align-items-center justify-content-between">
@@ -172,6 +173,7 @@
             const titleInput = document.getElementById('title');
             const bodyInput = document.getElementById('body');
             const dataInput = document.getElementById('data');
+            const urlInput = document.getElementById('url'); // Это возвращает null, если элемент не существует
 
             switch (type) {
                 case 'money-received':
@@ -184,8 +186,13 @@
                         sender_name: 'Иван Петров',
                         account_id: 'acc-123456',
                         transaction_id: 'trx-' + Date.now(),
-                        action: 'open_transaction'
+                        action: 'open_transaction',
+                        url: '/transactions/details' // Добавляем URL прямо в данные
                     }, null, 2);
+                    // Устанавливаем значение URL только если элемент существует
+                    if (urlInput) {
+                        urlInput.value = '/transactions/details';
+                    }
                     break;
 
                 case 'money-sent':
@@ -198,8 +205,12 @@
                         recipient_name: 'Мария Сидорова',
                         account_id: 'acc-123456',
                         transaction_id: 'trx-' + Date.now(),
-                        action: 'open_transaction'
+                        action: 'open_transaction',
+                        url: '/transactions/outgoing' // Добавляем URL прямо в данные
                     }, null, 2);
+                    if (urlInput) {
+                        urlInput.value = '/transactions/outgoing';
+                    }
                     break;
 
                 case 'account-activated':
@@ -209,8 +220,12 @@
                         type: 'account-activated',
                         account_id: 'acc-' + Date.now(),
                         account_type: 'standard',
-                        action: 'open_account'
+                        action: 'open_account',
+                        url: '/account/welcome' // Добавляем URL прямо в данные
                     }, null, 2);
+                    if (urlInput) {
+                        urlInput.value = '/account/welcome';
+                    }
                     break;
 
                 case 'status-changed':
@@ -220,8 +235,12 @@
                         type: 'client-status-changed',
                         old_status: 'standard',
                         new_status: 'premium',
-                        action: 'open_profile'
+                        action: 'open_profile',
+                        url: '/profile/status' // Добавляем URL прямо в данные
                     }, null, 2);
+                    if (urlInput) {
+                        urlInput.value = '/profile/status';
+                    }
                     break;
             }
 

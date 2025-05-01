@@ -1,7 +1,7 @@
 # push_test_app/server.py
 import os
 import json
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify, send_file
 import logging
 from push_service import NotificationService
 
@@ -138,6 +138,21 @@ def push_tester():
         'firebase_vapid_key': os.environ.get('FIREBASE_VAPID_KEY', '')
     }
     return render_template('push_tester.html', **firebase_config)
+
+
+@app.route('/firebase-messaging-sw.js')
+def firebase_messaging_sw():
+    """Обслуживание Firebase service worker из корневой директории проекта."""
+    # Используем абсолютный путь к файлу
+    file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+                           'firebase-messaging-sw.js')
+    
+    # Проверяем существование файла
+    if not os.path.exists(file_path):
+        app.logger.error(f"Файл firebase-messaging-sw.js не найден по пути: {file_path}")
+        return "Service worker not found", 404
+    
+    return send_file(file_path, mimetype='application/javascript')
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))

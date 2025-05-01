@@ -17,16 +17,22 @@ class FirebasePushService:
         Args:
             service_account_path: Путь к файлу с учетными данными Firebase.
         """
-        if service_account_path is None:
-            service_account_path = os.environ.get(
-                'FIREBASE_CREDENTIALS_PATH', 
-                'credentials/serviceAccountKey.json'
-            )
-        
         try:
-            cred = credentials.Certificate(service_account_path)
-            self.app = firebase_admin.initialize_app(cred)
-            logging.info("Firebase приложение успешно инициализировано")
+            # Проверяем, инициализировано ли уже приложение
+            try:
+                self.app = firebase_admin.get_app()
+                logging.info("Используется существующее Firebase приложение")
+            except ValueError:
+                # Приложение не инициализировано, инициализируем его
+                if service_account_path is None:
+                    service_account_path = os.environ.get(
+                        'FIREBASE_CREDENTIALS_PATH', 
+                        'credentials/serviceAccountKey.json'
+                    )
+                
+                cred = credentials.Certificate(service_account_path)
+                self.app = firebase_admin.initialize_app(cred)
+                logging.info("Firebase приложение успешно инициализировано")
         except Exception as e:
             logging.error(f"Ошибка инициализации Firebase: {e}")
             raise
@@ -56,40 +62,48 @@ class FirebasePushService:
         if not data:
             data = {}
             
-        message = messaging.MulticastMessage(
-            notification=messaging.Notification(
-                title=title,
-                body=body
-            ),
-            data=data,
-            tokens=tokens
-        )
+        # Преобразуем все значения в data в строки
+        string_data = {}
+        for key, value in data.items():
+            string_data[key] = str(value)
         
-        try:
-            response = messaging.send_multicast(message)
-            logging.info(f"Отправлено {response.success_count} сообщений из {len(tokens)}")
-            
-            result = {
-                "success": response.success_count,
-                "failure": response.failure_count,
-                "total": len(tokens)
-            }
-            
-            if response.failure_count > 0:
-                result["errors"] = []
-                for idx, resp in enumerate(response.responses):
-                    if not resp.success:
-                        result["errors"].append({
-                            "token": tokens[idx],
-                            "error": str(resp.exception)
-                        })
-            
-            return result
-        except Exception as e:
-            logging.error(f"Ошибка отправки уведомления: {e}")
-            return {
-                "success": 0,
-                "failure": len(tokens),
-                "total": len(tokens),
-                "errors": [{"error": str(e)}]
-            }
+        success_count = 0
+        failure_count = 0
+        errors = []
+        
+        # Отправляем отдельное сообщение для каждого токена
+        for token in tokens:
+            try:
+                # Создаем объект сообщения (по документации)
+                message = messaging.Message(
+                    notification=messaging.Notification(
+                        title=title,
+                        body=body
+                    ),
+                    data=string_data,
+                    token=token
+                )
+                
+                # Отправляем сообщение
+                response = messaging.send(message)
+                logging.info(f"Сообщение успешно отправлено: {response}")
+                success_count += 1
+            except Exception as e:
+                logging.error(f"Ошибка отправки сообщения на токен {token}: {e}")
+                failure_count += 1
+                errors.append({
+                    "token": token,
+                    "error": str(e)
+                })
+        
+        # Формируем результат
+        result = {
+            "success": success_count,
+            "failure": failure_count,
+            "total": len(tokens)
+        }
+        
+        if errors:
+            result["errors"] = errors
+        
+        return result

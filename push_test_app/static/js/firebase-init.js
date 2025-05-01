@@ -2,13 +2,13 @@
 
 // Конфигурация Firebase из проекта push-service-e154f
 const firebaseConfig = {
-    apiKey: "{{ firebase_api_key }}",
-    authDomain: "{{ firebase_auth_domain }}",
-    projectId: "{{ firebase_project_id }}",
-    storageBucket: "{{ firebase_storage_bucket }}",
-    messagingSenderId: "{{ firebase_messaging_sender_id }}",
-    appId: "{{ firebase_app_id }}",
-    measurementId: "{{ firebase_measurement_id }}"
+    apiKey: "AIzaSyDNPFZbRyLAOBt1iCZ8xAkL8IC8tMIGj_Y",
+    authDomain: "push-service-e154f.firebaseapp.com",
+    projectId: "push-service-e154f",
+    storageBucket: "push-service-e154f.appspot.com",
+    messagingSenderId: "679184734382",
+    appId: "1:679184734382:web:8a0bff9c353280fa84f53f",
+    measurementId: "G-GNEZ92QK17"
 };
 
 // VAPID ключ для веб-приложений
@@ -134,11 +134,17 @@ function showNotification(payload) {
         body: payload.notification?.body || 'Получено новое уведомление',
         icon: payload.notification?.image || '/static/img/firebase-logo.png',
         badge: '/static/img/notification-badge.png',
-        data: payload.data || {}
+        data: payload.data || {} // Скрытые данные будут здесь
     };
 
     // Создаем и показываем уведомление
     const notification = new Notification(notificationTitle, notificationOptions);
+    console.log('Получено сообщение в активном окне:', payload);
+
+    // Добавим больше информации для диагностики
+    console.log('Заголовок:', payload.notification?.title);
+    console.log('Текст:', payload.notification?.body);
+    console.log('Данные:', payload.data);
 
     // Обработка клика по уведомлению
     notification.onclick = function () {
@@ -187,18 +193,49 @@ async function sendPushNotification(data) {
     try {
         logToUI('info', 'Отправка запроса на сервер...');
 
-        const response = await fetch('/api/send-push', {
+        // Преобразуем все значения в data в строки
+        const stringifiedData = {};
+        if (data.data) {
+            Object.keys(data.data).forEach(key => {
+                stringifiedData[key] = String(data.data[key]);
+            });
+        }
+
+        // Добавляем изображение в data если оно есть
+        if (data.image) {
+            stringifiedData['image'] = String(data.image);
+        }
+
+        // Добавляем URL для перехода, если он не указан в data
+        if (data.url && !stringifiedData['url']) {
+            stringifiedData['url'] = String(data.url);
+        }
+
+        // Подготавливаем данные для сервера
+        const requestData = {
+            title: data.title,
+            body: data.body,
+            tokens: data.token ? [data.token] : [],
+            data: stringifiedData
+        };
+
+        // Отправляем запрос на правильный эндпоинт
+        const response = await fetch('/api/notifications', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(requestData)
         });
 
         const result = await response.json();
 
         if (response.ok) {
-            logToUI('success', `Уведомление успешно отправлено! ID: ${result.message_id}`);
+            const notificationId = result.notification && result.notification.id
+                ? result.notification.id
+                : 'неизвестно';
+
+            logToUI('success', `Уведомление успешно отправлено! ID: ${notificationId}`);
             return result;
         } else {
             logToUI('error', `Ошибка отправки уведомления: ${result.error}`);
