@@ -9,9 +9,6 @@
 - Поддержка скрытых данных в уведомлениях (deep links, идентификаторы)
 - Локализация сообщений на разных языках
 - Специфические настройки для Android и iOS
-- Групповая отправка уведомлений (multicast)
-- Поддержка Data-only уведомлений
-- Интеграция с Kafka для приема событий
 - Расширяемая система обработчиков событий
 
 ## Установка
@@ -25,8 +22,8 @@
 
 1. Клонируйте репозиторий:
 ```bash
-git clone https://github.com/yourusername/push-notification-service.git
-cd push-notification-service
+git clone https://github.com/LarisaShirokikh-luminary/push-service.git
+cd push-service
 ```
 
 2. Установите зависимости с помощью Poetry:
@@ -37,7 +34,7 @@ poetry install
 3. Скопируйте пример файла `.env.example` в `.env` и заполните необходимыми значениями:
 ```bash
 cp .env.example .env
-# Отредактируйте файл .env вашим любимым редактором
+
 ```
 
 4. Загрузите файл учетных данных Firebase:
@@ -69,33 +66,6 @@ event_data = {
 
 # Отправка уведомления
 result = service.handle_hook(event_data)
-```
-
-### Интеграция с Kafka
-
-```python
-from kafka import KafkaConsumer
-from push_service import NotificationService
-import json
-
-# Инициализация сервиса
-service = NotificationService(service_account_path="serviceAccountKey.json")
-
-# Создание консьюмера Kafka
-consumer = KafkaConsumer(
-    'notification_events',
-    bootstrap_servers=['localhost:9092'],
-    value_deserializer=lambda m: json.loads(m.decode('utf-8'))
-)
-
-# Обработка сообщений
-for message in consumer:
-    try:
-        # Отправка уведомления
-        result = service.handle_hook(message.value)
-        print(f"Notification sent: {result}")
-    except Exception as e:
-        print(f"Error sending notification: {e}")
 ```
 
 ### Создание пользовательских обработчиков событий
@@ -157,36 +127,6 @@ result = service.send_multicast_notification(
 print(f"Sent to {result['success_count']} clients, failed for {result['failure_count']} clients")
 ```
 
-## Тестирование
-
-### Запуск тестов с помощью pytest
-
-```bash
-poetry run pytest
-```
-
-### Запуск утилиты CLI для тестирования
-
-```bash
-# Создание примеров конфигурационных файлов
-python push_cli.py --setup
-
-# Запуск всех тестовых сценариев
-python push_cli.py --all
-
-# Отправка конкретного уведомления
-python push_cli.py --token YOUR_FCM_TOKEN --message "Test message" --title "Test Title"
-
-# Тестирование определенного типа события
-python push_cli.py --webhook-type receive-money --client-id 12345
-```
-
-### Запуск через Docker
-
-```bash
-# Сборка и запуск контейнера
-docker-compose -f docker/docker-compose.yml up --build
-```
 
 ## Поддерживаемые типы уведомлений
 
@@ -205,21 +145,48 @@ docker-compose -f docker/docker-compose.yml up --build
 ## Структура проекта
 
 ```
-push-notification-service/
-├── push_service/              # Основной модуль
-│   ├── __init__.py            # Инициализация сервиса
-│   ├── models.py              # Модели данных
-│   ├── firebase_push.py       # Работа с Firebase
-│   └── handlers.py            # Обработчики событий
-├── tests/                     # Тесты
-│   ├── conftest.py            # Конфигурация тестов
-│   └── test_notification_service.py
-├── examples/                  # Примеры использования
-│   └── kafka_integration.py   # Интеграция с Kafka
-├── push_cli.py                # Утилита командной строки
-├── pyproject.toml             # Конфигурация Poetry
-├── .env.example               # Пример файла окружения
-└── README.md                  # Документация
+.
+├── .dockerignore
+├── .env.example
+├── .gitignore
+├── credentials
+│   └── serviceAccountKey.json
+├── docker
+│   ├── docker-compose.yml
+│   └── Dockerfile
+├── firebase-messaging-sw.js
+├── index.html
+├── logs
+├── poetry.lock
+├── push_service
+│   ├── __init__.py
+│   ├── firebase_push.py
+│   ├── handlers.py
+│   ├── models.py
+│   ├── notification_service.py
+│   └── web_server.py
+├── push_test_app
+│   ├── server.py
+│   ├── static
+│   │   ├── css
+│   │   │   └── styles.css
+│   │   ├── img
+│   │   │   └── firebase-logo.png
+│   │   ├── js
+│   │   │   ├── app.js
+│   │   │   └── firebase-init.js
+│   │   └── sounds
+│   │       └── notification.mp3
+│   └── templates
+│       ├── index.html
+│       └── push_tester.html
+├── pyproject.toml
+├── README.md
+├── serviceAccountKey.json
+└── structure.txt
+
+12 directories, 27 files
+
 ```
 
 ## Настройка для клиентских приложений
@@ -319,21 +286,20 @@ firebase.send_push(
 )
 ```
 
-### Обработка сбоев и повторных отправок
+### Запуск веб-приложения
 
-Сервис предоставляет информацию о сбоях при отправке уведомлений, что позволяет реализовать механизм повторных попыток.
+```python
+poetry run python push_test_app/server.py
+```
 
-## Рекомендации и лучшие практики
+### Приложение будет доступно по адресу
 
-1. **Безопасность**: Храните файл `serviceAccountKey.json` в безопасном месте и не включайте его в репозиторий.
+```
+http://127.0.0.1:8080
+```
 
-2. **Токены устройств**: Регулярно проверяйте и обновляйте токены устройств, так как они могут стать недействительными.
 
-3. **Ограничение размера**: Размер сообщения ограничен 4 КБ, не перегружайте уведомления лишними данными.
 
-4. **Deep Links**: Используйте deep links для улучшения пользовательского опыта, направляя пользователя на нужный экран.
-
-5. **Локализация**: Адаптируйте сообщения под язык пользователя для улучшения взаимодействия.
 
 ## Лицензия
 

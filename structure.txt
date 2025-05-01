@@ -1,27 +1,16 @@
 .
 ├── .dockerignore
-├── .env
 ├── .env.example
 ├── .gitignore
 ├── credentials
 │   └── serviceAccountKey.json
-├── credentials_persist
 ├── docker
-│   ├── docker_compose.test.yml
-│   ├── docker-compose.webapp.yml
 │   ├── docker-compose.yml
-│   ├── Dockerfile
-│   ├── Dockerfile.webapp
-│   ├── entrypoint.sh
-│   ├── README.md
-│   └── run_tests.sh
-├── examples
-│   └── kafka_integration.py
+│   └── Dockerfile
 ├── firebase-messaging-sw.js
 ├── index.html
 ├── logs
 ├── poetry.lock
-├── push_cli.py
 ├── push_service
 │   ├── __init__.py
 │   ├── firebase_push.py
@@ -30,27 +19,23 @@
 │   ├── notification_service.py
 │   └── web_server.py
 ├── push_test_app
-│   ├── README.md
 │   ├── server.py
 │   ├── static
 │   │   ├── css
 │   │   │   └── styles.css
 │   │   ├── img
 │   │   │   └── firebase-logo.png
-│   │   └── js
-│   │       ├── app.js
-│   │       └── firebase-init.js
+│   │   ├── js
+│   │   │   ├── app.js
+│   │   │   └── firebase-init.js
+│   │   └── sounds
+│   │       └── notification.mp3
 │   └── templates
 │       ├── index.html
 │       └── push_tester.html
 ├── pyproject.toml
 ├── README.md
 ├── serviceAccountKey.json
-├── setup.sh
-├── simple_test.py
-├── structure.txt
-└── tests
-    ├── conftest.py
-    └── test_notification_service.py
+└── structure.txt
 
-14 directories, 40 files
+12 directories, 27 files
