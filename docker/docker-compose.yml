@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   # Kafka для обработки событий
   zookeeper:
@@ -42,30 +44,14 @@ services:
     volumes:
       # Монтируем весь проект в /app
       - ../:/app
+      # Том для хранения учетных данных между перезапусками
+      - push-service-credentials:/app/credentials_persist
     working_dir: /app
-    command: >
-      bash -c "
-        # Отладка - проверяем содержимое директорий
-        echo '📂 Листинг директории /app:' &&
-        ls -la /app &&
-        echo '📂 Листинг директории /app/credentials:' &&
-        ls -la /app/credentials &&
-        
-        # Копируем файл serviceAccountKey.json в корневую директорию (на случай если код его там ищет)
-        cp /app/credentials/serviceAccountKey.json /app/ &&
-        
-        # Устанавливаем зависимости
-        python -m pip install --upgrade pip &&
-        python -m pip install poetry &&
-        poetry config virtualenvs.create false &&
-        poetry install --no-interaction --no-ansi &&
-        
-        # Запускаем тест
-        python simple_test.py
-      "
+    # Используем готовый entrypoint
+    entrypoint: [ "/entrypoint.sh" ]
+    # Порт для веб-сервера
     ports:
-      - "8004:8004"  # Порт для веб-сервера
-    
+      - "8004:8004"
     # Автоматический перезапуск при сбоях
     restart: unless-stopped
 
@@ -74,3 +60,4 @@ volumes:
   zookeeper-data:
   zookeeper-log:
   kafka-data:
+  push-service-credentials: # Том для хранения учетных данных Firebase

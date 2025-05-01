@@ -5,6 +5,7 @@
 import os
 import json
 import logging
+from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
 
 import firebase_admin
@@ -39,7 +40,24 @@ class FirebasePushService:
         """
         if cls._instance is None:
             if service_account_path is None:
-                service_account_path = os.environ.get('FIREBASE_CREDENTIALS_PATH', 'serviceAccountKey.json')
+                # Проверяем несколько вариантов путей к файлу учетных данных
+                possible_paths = [
+                    os.environ.get('FIREBASE_CREDENTIALS_PATH', 'serviceAccountKey.json'),
+                    os.path.join('credentials', 'serviceAccountKey.json'),
+                    '/app/serviceAccountKey.json',
+                    '/app/credentials/serviceAccountKey.json'
+                ]
+                
+                # Выбираем первый существующий файл
+                for path in possible_paths:
+                    if os.path.isfile(path):
+                        service_account_path = path
+                        logger.info(f"Найден файл учетных данных Firebase: {path}")
+                        break
+                else:
+                    logger.warning("Не найден файл учетных данных Firebase в стандартных местах")
+                    service_account_path = 'serviceAccountKey.json'  # Fallback на стандартный путь
+            
             cls._instance = cls(service_account_path)
         return cls._instance
     
@@ -51,12 +69,39 @@ class FirebasePushService:
             service_account_path: Путь к JSON-файлу с учетными данными Firebase
         """
         try:
+            # Логируем попытку инициализации с текущим путем
+            logger.info(f"Пытаемся инициализировать Firebase с файлом: {service_account_path}")
+            
+            # Проверяем все возможные пути к файлу
+            cred_path = Path(service_account_path)
+            if not cred_path.is_file():
+                # Проверяем относительно корня проекта
+                project_root = Path(__file__).parent.parent
+                possible_paths = [
+                    project_root / service_account_path,
+                    project_root / 'credentials' / service_account_path,
+                    project_root / service_account_path.split('/')[-1]
+                ]
+                
+                for path in possible_paths:
+                    logger.info(f"Проверяем наличие файла: {path}")
+                    if path.is_file():
+                        cred_path = path
+                        logger.info(f"Найден файл по пути: {cred_path}")
+                        break
+                else:
+                    # Не найден файл - логируем ошибку с информацией о поиске
+                    logger.error(f"Не удалось найти файл учетных данных. Проверенные пути: {service_account_path}, {', '.join(str(p) for p in possible_paths)}")
+                    raise FileNotFoundError(f"Не найден файл учетных данных Firebase: {service_account_path}")
+            
+            # Инициализируем Firebase с найденным файлом
+            cred = credentials.Certificate(str(cred_path))
             if not firebase_admin._apps:
-                cred = credentials.Certificate(service_account_path)
-                self.app = firebase_admin.initialize_app(cred)
-                logger.info("Firebase initialized successfully")
+                firebase_admin.initialize_app(cred)
+            logger.info("Firebase успешно инициализирован")
+            
         except Exception as e:
-            logger.error(f"Failed to initialize Firebase: {e}")
+            logger.error(f"Ошибка инициализации Firebase: {e}")
             raise PushError(f"Firebase initialization error: {str(e)}")
     
     def send_push(self, 
@@ -268,7 +313,6 @@ class FirebasePushService:
             # Отправка сообщения
             response = messaging.send_multicast(message)
             
-           
             logger.info(f"Multicast sent: {response.success_count} successful, {response.failure_count} failed")
             
             # Анализ ошибок
@@ -311,8 +355,8 @@ class FirebaseMessaging:
             credentials_path: Путь к файлу с учетными данными Firebase
         """
         try:
-            logger.info(f"Файл учетных данных Firebase найден: {credentials_path}")
-            self.service = FirebasePushService(credentials_path)
+            # Получаем синглтон-экземпляр сервиса
+            self.service = FirebasePushService.get_instance(credentials_path)
             logger.info("Firebase initialized successfully")
         except Exception as e:
             logger.error(f"Error initializing Firebase: {str(e)}")
