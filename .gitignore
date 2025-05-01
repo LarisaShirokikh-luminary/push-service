@@ -76,3 +76,8 @@ logs/
 # System
 Thumbs.db
 ehthumbs.db
+
+
+serviceAccountKey.json
+credentials/serviceAccountKey.json
+
